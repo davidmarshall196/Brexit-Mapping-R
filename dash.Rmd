@@ -1,0 +1,253 @@
+---
+title: "Census Data Mapping" 
+author: "David Marshall"
+# date: "June 2019"
+output: 
+  flexdashboard::flex_dashboard:
+    social: ["menu"]
+    source_code: embed
+    vertical_layout: scroll
+    theme: yeti
+editor_options: 
+  chunk_output_type: console
+---
+
+``` {js}
+$('.navbar-inverse').removeClass('navbar-inverse').addClass('navbar-default');
+```
+
+```{r setup, include=FALSE}
+# Load necessary packages. 
+library(flexdashboard)
+library(highcharter)
+library(viridis) 
+library(tidyverse)
+library(leaflet)
+```
+
+```{r include = FALSE}
+library(rgdal)
+shape_data <- 
+  readOGR("Local_Authority_Districts_December_2017_Super_Generalised_Clipped_Boundaries_in_United_Kingdom_WGS84.shp",
+          layer = "Local_Authority_Districts_December_2017_Super_Generalised_Clipped_Boundaries_in_United_Kingdom_WGS84")
+
+library(readxl)
+data <- read_excel("fullset aggregate (1).xlsx")
+data <- data %>% select(-region)
+
+library(dplyr)
+shape_data@data <- left_join(shape_data@data, data,
+                             by = c("lad17cd" = "area_code"))
+
+# Fill nas with mean
+library(zoo)
+shape_data@data[,13:42] <- na.aggregate(shape_data@data[,13:42])
+
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = shape_data@data$Value
+)
+```
+
+Maps
+=======================================================================
+
+
+Column {.tabset .tabset-fade data-width=500 .colored }
+-----------------------------------------------------------------------
+
+### Leave Votes
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(leave_percent),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, 
+                            shape_data@data$leave_percent, "%"),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~leave_percent,
+            title = "Percentage of Leave Votes",
+            labFormat = labelFormat(),
+            opacity = 1, bins = 6)
+```
+
+### Population
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(population),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, 
+                            shape_data@data$population),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~population,
+            title = "Population",
+            labFormat = labelFormat(),
+            opacity = 1, bins = 6)
+```
+
+
+Column {.tabset .tabset-fade data-width=500 .colored }
+-----------------------------------------------------------------------
+
+### Income
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(income_year),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, ": £", 
+                            shape_data@data$income_year),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~income_year,
+            title = "Income Per Year",
+            labFormat = labelFormat(prefix = "£"),
+            opacity = 1, bins = 6)
+```
+
+
+### Degree Percent
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(degree_percent),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, 
+                            shape_data@data$degree_percent, "%"),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~degree_percent,
+            title = "Percentage with a Degree",
+            labFormat = labelFormat(),
+            opacity = 1, bins = 6)
+```
+
+### Unemployment
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(unemployed_percent),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, 
+                            shape_data@data$unemployed_percent, "%"),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~unemployed_percent,
+            title = "Percentage of Unemployed",
+            labFormat = labelFormat(),
+            opacity = 1, bins = 6)
+```
+
+### Net Migration
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(netmigration_percent),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, 
+                            shape_data@data$netmigration_percent, "%"),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~netmigration_percent,
+            title = "Percentage Net Migration",
+            labFormat = labelFormat(),
+            opacity = 1, bins = 6)
+```
+
+### Austerity
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(austerityperworker),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, ": £", 
+                            shape_data@data$austerityperworker),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~austerityperworker,
+            title = "Austerity Per Worker",
+            labFormat = labelFormat(prefix = "£"),
+            opacity = 1, bins = 6)
+```
+
+### Over 65s
+```{r fig.height = 8}
+leaflet(shape_data) %>%
+  addTiles() %>%
+  addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
+              opacity = 0.6, fillOpacity = 0.6,
+              fillColor = ~pal(over65s_percent),
+              highlightOptions = highlightOptions(color = "white", weight = 2,
+                                                  bringToFront = TRUE),
+              label = paste(shape_data@data$lad17nm, 
+                            shape_data@data$over65s_percent, "%"),
+              labelOptions = c(interactive = TRUE, textsize = "14px")) %>%
+  addLegend(pal = pal, values = ~over65s_percent,
+            title = "Percentage of Over 65s",
+            labFormat = labelFormat(),
+            opacity = 1, bins = 6)
+```
+
+
+
+About {data-icon="fa-info-circle"}
+=======================================================================
+
+Mapping of Brexit and ONS data aggregated at local authority level.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
